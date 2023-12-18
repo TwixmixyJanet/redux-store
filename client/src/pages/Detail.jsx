@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@apollo/client';
-
 import Cart from '../components/Cart';
-import { useStoreContext } from '../utils/GlobalState';
 import {
   REMOVE_FROM_CART,
   UPDATE_CART_QUANTITY,
@@ -13,23 +11,25 @@ import {
 import { QUERY_PRODUCTS } from '../utils/queries';
 import { idbPromise } from '../utils/helpers';
 import spinner from '../assets/spinner.gif';
+import { useDispatch, useSelector } from 'react-redux';
 
 function Detail() {
-  const [state, dispatch] = useStoreContext();
+  const dispatch = useDispatch();
+  const stateProducts = useSelector((state) => state.products);
+  const stateCart = useSelector((state) => state.cart);
+
   const { id } = useParams();
 
   const [currentProduct, setCurrentProduct] = useState({});
 
   const { loading, data } = useQuery(QUERY_PRODUCTS);
 
-  const { products, cart } = state;
-
   useEffect(() => {
-    // already in global store
-    if (products.length) {
-      setCurrentProduct(products.find((product) => product._id === id));
+ 
+    if (stateProducts.length) {
+      setCurrentProduct(stateProducts.find((product) => product._id === id));
     }
-    // retrieved from server
+
     else if (data) {
       dispatch({
         type: UPDATE_PRODUCTS,
@@ -40,7 +40,7 @@ function Detail() {
         idbPromise('products', 'put', product);
       });
     }
-    // get cache from idb
+
     else if (!loading) {
       idbPromise('products', 'get').then((indexedProducts) => {
         dispatch({
@@ -49,10 +49,10 @@ function Detail() {
         });
       });
     }
-  }, [products, data, loading, dispatch, id]);
+  }, [stateProducts, data, loading, dispatch, id]);
 
   const addToCart = () => {
-    const itemInCart = cart.find((cartItem) => cartItem._id === id);
+    const itemInCart = stateCart.find((cartItem) => cartItem._id === id);
     if (itemInCart) {
       dispatch({
         type: UPDATE_CART_QUANTITY,
@@ -83,7 +83,7 @@ function Detail() {
 
   return (
     <>
-      {currentProduct && cart ? (
+      {currentProduct && stateCart ? (
         <div className="container my-1">
           <Link to="/">← Back to Products</Link>
 
@@ -95,7 +95,7 @@ function Detail() {
             <strong>Price:</strong>${currentProduct.price}{' '}
             <button onClick={addToCart}>Add to Cart</button>
             <button
-              disabled={!cart.find((p) => p._id === currentProduct._id)}
+              disabled={!stateCart.find((p) => p._id === currentProduct._id)}
               onClick={removeFromCart}
             >
               Remove from Cart
