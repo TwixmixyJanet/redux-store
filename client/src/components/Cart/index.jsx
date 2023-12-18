@@ -5,14 +5,17 @@ import { QUERY_CHECKOUT } from '../../utils/queries';
 import { idbPromise } from '../../utils/helpers';
 import CartItem from '../CartItem';
 import Auth from '../../utils/auth';
-import { useStoreContext } from '../../utils/GlobalState';
+import { useDispatch, useSelector } from 'react-redux';
 import { TOGGLE_CART, ADD_MULTIPLE_TO_CART } from '../../utils/actions';
 import './style.css';
 
 const stripePromise = loadStripe('pk_test_TYooMQauvdEDq54NiTphI7jx');
 
 const Cart = () => {
-  const [state, dispatch] = useStoreContext();
+  const dispatch = useDispatch();
+  const stateCart = useSelector((state) => state.cart);
+  const stateCartOpen = useSelector((state) => state.cartOpen);
+  
   const [getCheckout, { data }] = useLazyQuery(QUERY_CHECKOUT);
 
   useEffect(() => {
@@ -29,10 +32,10 @@ const Cart = () => {
       dispatch({ type: ADD_MULTIPLE_TO_CART, products: [...cart] });
     }
 
-    if (!state.cart.length) {
+    if (!stateCart.length) {
       getCart();
     }
-  }, [state.cart.length, dispatch]);
+  }, [stateCart.length, dispatch]);
 
   function toggleCart() {
     dispatch({ type: TOGGLE_CART });
@@ -40,7 +43,7 @@ const Cart = () => {
 
   function calculateTotal() {
     let sum = 0;
-    state.cart.forEach((item) => {
+    stateCart.forEach((item) => {
       sum += item.price * item.purchaseQuantity;
     });
     return sum.toFixed(2);
@@ -48,10 +51,10 @@ const Cart = () => {
 
   function submitCheckout() {
     const productIds = [];
-    console.log(state.cart);
-    console.log(state.cart.length);
+    console.log(stateCart);
+    console.log(stateCart.length);
     console.log("submitCheckout");
-    state.cart.forEach((item) => {
+    stateCart.forEach((item) => {
       for (let i = 0; i < item.purchaseQuantity; i++) {
         productIds.push(item._id);
       }
@@ -62,7 +65,7 @@ const Cart = () => {
     });
   }
 
-  if (!state.cartOpen) {
+  if (!stateCartOpen) {
     return (
       <div className="cart-closed" onClick={toggleCart}>
         <span role="img" aria-label="trash">
@@ -78,9 +81,9 @@ const Cart = () => {
         [close]
       </div>
       <h2>Shopping Cart</h2>
-      {state.cart.length ? (
+      {stateCart.length ? (
         <div>
-          {state.cart.map((item) => (
+          {stateCart.map((item) => (
             <CartItem key={item._id} item={item} />
           ))}
 
